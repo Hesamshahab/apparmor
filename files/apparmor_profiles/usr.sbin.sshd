@@ -1,0 +1,64 @@
+# AppArmor profile for OpenSSH server (sshd)
+# Save this file as /etc/apparmor.d/usr.sbin.sshd
+
+#include <tunables/global>
+
+/usr/sbin/sshd {
+    # Include basic library access
+    #include <abstractions/base>
+
+    # Read access to configuration files
+    /etc/ssh/sshd_config r,
+    /etc/ssh/ssh_host_* r,
+
+    # Read-only access to user configuration and authorized keys
+    /home/*/.ssh/authorized_keys r,
+    /home/*/.ssh/known_hosts r,
+
+    # Full access to temporary runtime directories
+    /var/run/sshd.pid wk,
+    /run/sshd.pid wk,
+
+    # Allow access to PAM libraries (if needed)
+    /lib/security/** mr,
+    /usr/lib/security/** mr,
+
+    # Allow read access to shared libraries
+    /lib/** mr,
+    /usr/lib/** mr,
+
+    # Allow execution of shell and common commands for user sessions
+    /bin/sh ixr,
+    /usr/bin/scp ixr,
+    /usr/bin/sftp-server ixr,
+    /usr/lib/openssh/sftp-server ixr,
+
+    # Read and write access to TTY devices for user sessions
+    /dev/tty rw,
+    /dev/pts/* rw,
+
+    # Access to random and null devices
+    /dev/null rw,
+    /dev/urandom r,
+    /dev/random r,
+
+    # Allow access to system logs
+    /var/log/auth.log rw,
+    /var/log/secure rw,
+
+    # Permit network access for SSH connections
+    network inet stream,
+    network inet6 stream,
+
+    # Capabilities to set user IDs and use network ports
+    capability setuid,
+    capability setgid,
+    capability net_bind_service,
+
+    # Deny access to sensitive system directories for security
+    deny /proc/** mrwklx,
+    deny /sys/** mrwklx,
+
+    # Profile enforcement
+    /usr/sbin/sshd ix,
+}

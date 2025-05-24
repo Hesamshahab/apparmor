@@ -1,0 +1,7 @@
+galaxy_info:
+  author: Amirhesam Shahab
+  namespace: Security
+  description: install and configure apparmor
+  license: MIT
+  min_ansible_version: 2.1
+

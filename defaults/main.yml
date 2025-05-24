@@ -1,0 +1,32 @@
+---
+# Apparmor configuration variables
+apparmor:
+  group: apparmor
+  user: apparmor
+  packages:
+    - rsyslog
+    - apparmor-docs
+    - apparmor-parser
+    - apparmor-profiles
+    - apparmor-utils
+    - audit
+    - libapparmor1
+    - perl-apparmor
+    - yast2-apparmor
+# List of profiles to manage
+apparmor_profiles:
+  - profile_name: #test
+    source:   #files/apparmor_profiles/test.profile
+# Define whether AppArmor should be enforced (enforce) or put in complain mode
+apparmor_mode: # Options: "enforce", "complain"
+# Logrotate
+logrotate:
+  path: /etc/logrotate.d
+  apparmor:
+    name: apparmor
+
+# Test
+#test_load_command: aa-status | grep 'profiles are loaded\|test'
+test_load_command:  aa-status | grep 'profiles are loaded'
+test_load_command_2: podman inspect postgres
+test_load_command_3: cat /var/log/audit/audit.log | grep -i 'apparmor'

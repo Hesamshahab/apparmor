@@ -1,0 +1,7 @@
+all:
+  hosts:
+    apparmor:
+        apparmor_profiles:
+          - profile_name: container-restricted-profile
+            source: files/apparmor_profiles/container-restricted-profile
+        apparmor_mode: complain

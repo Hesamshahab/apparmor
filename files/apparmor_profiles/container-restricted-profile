@@ -1,0 +1,44 @@
+# AppArmor profile to restrict a container’s access to resources
+#include <tunables/global>
+
+profile container-restricted-profile flags=(complain) {
+    # Allow basic access to system libraries
+    /lib/** r,
+    /usr/lib/** r,
+
+    # Allow read access to certain configuration files
+    /etc/hostname r,
+    /etc/hosts r,
+    /etc/resolv.conf r,
+
+    # Limit file system access within the container
+    deny /home/* rwx,
+    deny /root/** rwx,
+    deny /mnt/** rwx,
+    deny /media/** rwx,
+    
+    # Allow container to access its own file storage area
+    /var/lib/container/** rwk,
+
+    # Deny network access
+    deny network,
+
+    # Restrict capabilities to essential ones
+    capability chown,
+    capability dac_override,
+    capability fowner,
+    capability setgid,
+    capability setuid,
+
+    # Restrict access to temporary directories
+    /tmp/ rw,
+    /tmp/** rw,
+
+    # Allow access to /proc for process information, restrict other access
+    @{PROC}/[0-9]*/cmdline r,
+    @{PROC}/[0-9]*/status r,
+    deny @{PROC}/sys/kernel/** rw,
+
+    # Deny all other file system access
+    deny /sys/** rw,
+}

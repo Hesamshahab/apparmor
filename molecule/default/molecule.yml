@@ -1,0 +1,24 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+  provider:
+    name: libvirt
+  default_box: opensuse/Leap-15.4.x86_64
+platforms:
+  - name: apparmor
+    memory: 2048
+    cpus: 1
+    interfaces:
+      - network_name: private_network
+        type: static
+        ip: 192.168.56.111
+        auto_config: yes
+provisioner:
+  name: ansible
+  inventory:
+    links:
+      hosts: './inventory.yml'
+verifier:
+  name: ansible

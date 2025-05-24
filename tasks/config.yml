@@ -1,0 +1,17 @@
+---
+- name: Security-Apparmor | Config | Copy AppArmor profiles
+  copy:
+    src: "{{ item.source }}"
+    dest: "/etc/apparmor.d/{{ item.profile_name }}"
+    owner: "{{ apparmor.user }}"
+    group: "{{ apparmor.group }}"
+    mode: '0644'
+  with_items: "{{ apparmor_profiles }}"
+
+- name: Security-Apparmor | Config | Set AppArmor profile mode
+  command: "aa-{{ apparmor_mode }} /etc/apparmor.d/{{ item.profile_name }}"
+  with_items: "{{ apparmor_profiles }}"
+  when: apparmor_mode in ["enforce", "complain"]
+  notify:
+    - apparmor
+    - audit

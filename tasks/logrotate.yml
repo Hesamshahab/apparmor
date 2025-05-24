@@ -1,0 +1,25 @@
+---
+- name: Security-nftables | Logrotate | Create "{{ logrotate.apparmor.name }}" logrotate config file
+  file:
+    path: "{{ logrotate.path }}/{{ logrotate.apparmor.name }}"
+    state: touch
+    mode: "0644"
+    owner: root
+    group: root
+
+- name: Security-nftables | Logrotate | Add config block to "{{ logrotate.apparmor.name }}" config file
+  blockinfile:
+    path: "{{ logrotate.path }}/{{ logrotate.apparmor.name }}"
+    block: |
+      /var/log/audit/audit.log {
+        daily
+        missingok
+        notifempty
+        sharedscripts
+        rotate 7
+        compress
+        delaycompress
+        postrotate
+            /usr/bin/systemctl kill -s USR1 auditd.service >/dev/null 2>&1 || true
+        endscript
+      }

@@ -1,0 +1,52 @@
+---
+- name: Security-Apparmor | Main | Collect only facts returned by os_family
+  setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - os_family
+  tags:
+    - always
+
+- name: Security-Apparmor | Main | Include install tasks
+  include_tasks:
+    file: setup.yml
+  tags: 
+    - install
+    - uninstall
+    - never
+
+- name: Security-Apparmor | Main | Include config tasks
+  include_tasks:
+    file: config.yml
+    apply:
+      tags: config
+  tags:
+    - config
+    - never
+
+- name: Security-Apparmor | Main | Include logrotate tasks
+  include_tasks:
+    file: logrotate.yml
+    apply:
+      tags: logrotate
+  tags:
+    - logrotate
+    - never
+
+- name: Security-Apparmor | Main | Include test tasks
+  include_tasks:
+    file: test.yml
+  tags:
+    - test_script
+    - test_podman
+    - never
+
+- name: Security-Apparmor | Main | Include verify tasks
+  include_tasks:
+    file: verify.yml
+    apply:
+      tags: verify
+  tags:
+    - verify
+    - never

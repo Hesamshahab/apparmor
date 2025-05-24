@@ -1,0 +1,19 @@
+---
+# handlers file for apparmor
+- name: Security-Apparmor | handlers | Restart apparmor service.
+  service:
+    name: apparmor
+    enabled: true
+    state: restarted
+  listen: apparmor
+
+- name: Security-Apparmor | handlers | Restart audit service.
+  service:
+    name: auditd.service
+    enabled: true
+    state: restarted
+  listen: audit
+
+- name: Security-Apparmor | handlers | Reload apparmor
+  command: "systemctl reload apparmor"
+  listen: reload

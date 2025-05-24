@@ -1,0 +1,94 @@
+---
+- block:
+  - name: Security-Apparmor | Setup | Add Apparmor group
+    become: true
+    group:
+      name: "{{ apparmor.group }}"
+      state: present
+
+  - name: Security-Apparmor | Setup | Add Apparmor user
+    become: true
+    user:
+      name: "{{ apparmor.user }}"
+      comment: Apparmor user
+      group: "{{ apparmor.group }}"
+      groups: "{{ apparmor.group }}"
+      system: true
+
+  - name: Security-Apparmor | Setup | Install Apparmor on Opensuse
+    community.general.zypper:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - "{{ apparmor.packages }}"
+    when: ansible_os_family == "Suse"
+    notify:
+      - apparmor
+
+  - name: Security-Apparmor | Setup | Install Apparmor on Debian
+    package:
+      name: "{{ item }}"
+      state: latest
+    with_items:
+      - apparmor
+      - apparmor-profiles
+      - apparmor-utils
+    when: ansible_os_family == "Debian"
+    notify:
+      - apparmor
+
+  tags:
+    - install
+    - never
+
+  rescue:
+    - name: Security-Apparmor | Setup | Check Apparmor service status
+      ansible.builtin.systemd:
+        name: apparmor
+      register: aa_service_status
+
+- block:
+  - name: Security-Apparmor | Setup | Unloading AppArmor profiles
+    command: aa-teardown
+    register: aa_teardown
+  - debug:
+      var: aa_teardown.stdout_lines
+
+  - name: Security-Apparmor | Setup | Check Apparmor service status
+    ansible.builtin.systemd:
+      name: apparmor
+    register: aa_service_status
+
+  - name: Security-Apparmor | Setup | Stop Apparmor service.
+    service:
+      name: apparmor
+      enabled: false
+      state: stopped
+    when: aa_service_status.status.ActiveState == 'active'
+
+  - name: Security-Apparmor | Setup | Apparmor Remove files
+    ansible.builtin.file:
+      path: /etc/apparmor.d
+      state: absent
+
+  - name: Security-Apparmor | Setup | Uninstall Apparmor packages on Opensuse
+    community.general.zypper:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+      - apparmor
+      - apparmor-parser
+    when: ansible_os_family == "Suse"
+
+  - name: Security-Apparmor | Setup | Install Apparmor on Debian
+    package:
+      name: "{{ item }}"
+      state: latest
+    with_items:
+      - apparmor
+      - apparmor-utils
+    when: ansible_os_family == "Debian"
+
+  tags:
+    - uninstall
+    - nevar

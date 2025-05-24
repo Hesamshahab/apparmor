@@ -1,0 +1,38 @@
+- name: Security-Apparmor | Verify | Ensure Apparmor is running
+  ansible.builtin.systemd:
+    name: apparmor
+  register: aa_service_status
+
+- debug:
+    var: aa_service_status.status.ActiveState
+
+- name: Security-Apparmor | Verify | Ensure profile created
+  ansible.builtin.stat:
+    path: /etc/apparmor.d/container-restricted-profile
+  register: aa_profile_created
+
+- debug:
+    var: aa_profile_created.stat.exists
+
+- name: Security-Apparmor | Verify | Check profile loaded
+  ansible.builtin.shell: "{{ test_load_command }}"
+  register: aa_profile_loaded
+
+- debug:
+    var: aa_profile_loaded.stdout_lines
+
+- name: Security-Apparmor | Verify | Check profile loaded
+  ansible.builtin.shell: "{{ test_load_command_2 }}"
+  register: podman_test
+
+- debug:
+    msg: postgres running under apparmor service !
+  when: '"container-restricted-profile" in podman_test.stdout'
+
+- name: Security-Apparmor | Verify | Check audit log
+  ansible.builtin.shell: "{{ test_load_command_3 }}"
+  register: log_test
+
+- debug:
+    msg: apparmor log for your profile activated !
+  when: '"container-restricted-profile" in log_test.stdout'

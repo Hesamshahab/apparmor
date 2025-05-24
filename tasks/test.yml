@@ -1,0 +1,131 @@
+---
+- block:
+  - name: Security-Apparmor | Test | Ensure test.sh exist
+    ansible.builtin.stat:
+      path: /usr/bin/test.sh
+    register: test_sh
+
+  - name: Security-Apparmor | Test | Ensure test.txt exist
+    ansible.builtin.stat:
+      path: /etc/test.txt
+    register: test_txt
+
+  - name: Security-Apparmor | Test | Ensure test.log exist
+    ansible.builtin.stat:
+      path: /var/log/test.log
+    register: test_log
+
+  - name: Security-Apparmor | Test | Create script file
+    file:
+      path: "{{ item }}"
+      state: touch
+      mode: "0644"
+    with_items:
+      - /usr/bin/test.sh
+      - /etc/test.txt
+      - /var/log/test.log
+    when:
+    - not test_sh.stat.exists or not test_txt.stat.exists or not test_log.stat.exists
+
+  - name: Security-Apparmor | Test | test.txt
+    blockinfile:
+      path: /etc/test.txt
+      block: |
+        This is test for apparmpr profile.
+        full access or read only?
+
+  - name: Security-Apparmor | Test | test.sh
+    blockinfile:
+      path: /usr/bin/test.sh
+      block: |
+        # /bin/bash/#!
+        echo "Hello world"
+        echo $(date +"%T") > /var/log/test.log
+        cat /etc/test.txt >> /var/log/test.log
+        echo "Done"
+
+  - name: Security-Apparmor | Test | Execute permissoin to test.sh
+    file:
+      path: /usr/bin/test.sh
+      mode: "0755"
+
+  - name: Security-Apparmor | Test | Copy AppArmor profiles
+    copy:
+      src: "{{ item.source }}"
+      dest: "/etc/apparmor.d/{{ item.profile_name }}"
+      mode: '0644'
+    with_items: "{{ apparmor_profiles }}"
+
+  - name: Security-Apparmor | Test | Set AppArmor profile mode
+    command: "aa-{{ apparmor_mode }} /etc/apparmor.d/{{ item.profile_name }}"
+    with_items: "{{ apparmor_profiles }}"
+    when: apparmor_mode in ["enforce", "complain"]
+    notify:
+      - apparmor
+      - reload
+      - audit
+  tags:
+    - test_script
+    - never
+
+  rescue:
+    - name: Security-Apparmor | Setup | Check Apparmor service status
+      ansible.builtin.systemd:
+        name: apparmor
+      register: aa_service_status
+
+- block:
+  - name: Security-Apparmor | Test | Install podman
+    community.general.zypper:
+      name: podman
+      state: present
+
+  - name: Security-Apparmor | Test | Create /data directory
+    file:
+      path: /var/lib/data
+      state: directory
+
+  - name: Security-Apparmor | Test | Copy AppArmor profiles
+    copy:
+      src: "{{ item.source }}"
+      dest: "/etc/apparmor.d/{{ item.profile_name }}"
+      mode: '0644'
+    with_items: "{{ apparmor_profiles }}"
+
+  - name: Security-Apparmor | Test | Set AppArmor profile mode
+    command: "aa-{{ apparmor_mode }} /etc/apparmor.d/{{ item.profile_name }}"
+    with_items: "{{ apparmor_profiles }}"
+    when: apparmor_mode in ["enforce", "complain"]
+    notify:
+      - apparmor
+      - reload
+      - audit
+
+  - name: Security-Apparmor | Test | Run postgres container
+    containers.podman.podman_container:
+      name: postgres
+      image: postgres:13-alpine
+      security_opt:
+        - apparmor=container-restricted-profile
+      state: started
+      restart_policy: "no"
+      ports:
+        - 5432:5432
+      volumes:
+        - /var/lib/data
+      env:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: 123456Aa*
+
+  tags:
+    - test_podman
+    - never
+
+  rescue:
+    - name: Security-Apparmor | Test | Remove container
+      containers.podman.podman_container:
+        name: postgres
+        state: absent
+
+- name: Security-Apparmor | Test | Force run handlers
+  meta: flush_handlers

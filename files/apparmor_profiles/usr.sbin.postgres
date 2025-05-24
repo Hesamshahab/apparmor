@@ -1,0 +1,42 @@
+# AppArmor profile for PostgreSQL
+# Save this file as /etc/apparmor.d/usr.sbin.postgres
+
+#include <tunables/global>
+
+# Path to the PostgreSQL binary
+/usr/lib/postgresql/**/bin/postgres {
+    # Include common abstractions
+    # Include standard libraries
+    #include <abstractions/base>
+
+    # Read-only access to configuration files
+    /etc/postgresql/** r,
+
+    # Read access to shared libraries
+    /usr/lib/** mr,
+
+    # Full access to PostgreSQL data directories
+    /var/lib/postgresql/** rwk,
+
+    # Log files access
+    /var/log/postgresql/** rw,
+
+    # Allow reading temporary system files and runtime data
+    /run/postgresql/ rw,
+    /run/shm/ rw,
+
+    # Allow communication via Unix sockets
+    unix (send, receive),
+
+    # Network access (if remote connections are allowed)
+    network inet stream,
+    network inet6 stream,
+
+    # Allow execution of certain system utilities (optional)
+    /bin/sh ixr,
+    /usr/bin/env ixr,
+
+    # Deny everything else (optional, increases security)
+    deny /proc/** mrwklx,
+    deny /sys/** mrwklx,
+}
